@@ -27,7 +27,8 @@ namespace match3game
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-            rectPosition = new Vector2(_graphics.PreferredBackBufferWidth / 2 - (55 * 4), _graphics.PreferredBackBufferHeight / 2 - (55 * 4));
+            rectPosition = new Vector2(_graphics.PreferredBackBufferWidth / 2 - (55 * 4),
+                _graphics.PreferredBackBufferHeight / 2 - (55 * 4));
 
             fieldController = new FieldController(8, 8);
 
@@ -65,7 +66,9 @@ namespace match3game
             {
                 for (int j = 0; j < fieldController.Height; j++)
                 {
-                    _spriteBatch.Draw(rectTexture, rectPosition + new Vector2(i * 55, j * 55), fieldController.GemGrid[i, j].Color);
+                    _spriteBatch.Draw(rectTexture, 
+                        rectPosition + new Vector2(i * 55, j * 55), 
+                        fieldController.GemGrid[i, j].Color);
                 }
             }
 

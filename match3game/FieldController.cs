@@ -42,7 +42,8 @@ namespace match3game
 
         public void SwapGems(int[] firstGemPos, int[] secondGemPos)
         {
-            (GemGrid[firstGemPos[0], firstGemPos[1]], GemGrid[secondGemPos[0], secondGemPos[1]]) = (GemGrid[secondGemPos[0], secondGemPos[1]], GemGrid[firstGemPos[0], firstGemPos[1]]);
+            (GemGrid[firstGemPos[0], firstGemPos[1]], GemGrid[secondGemPos[0], secondGemPos[1]]) 
+                = (GemGrid[secondGemPos[0], secondGemPos[1]], GemGrid[firstGemPos[0], firstGemPos[1]]);
         }
 
         public void DestroyGem(int[] position)

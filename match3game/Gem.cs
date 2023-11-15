@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,15 +10,13 @@ namespace match3game
 {
     internal class Gem
     {
-        int Color;
+        public Color Color { get; private set; }
 
-        public Gem(int color) => Color = color;
+        public Gem(Color color) => Color = color;
 
         public virtual void Action() 
         { 
             
-
-
         }
     }
 }

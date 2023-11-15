@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +9,7 @@ namespace match3game
 {
     internal class VerticalLine : Gem
     {
-        public VerticalLine(int color) : base(color) { }
+        public VerticalLine(Color color) : base(color) { }
 
         public override void Action()
         {

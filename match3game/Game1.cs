@@ -6,6 +6,11 @@ namespace match3game
 {
     public class Game1 : Game
     {
+        Texture2D rectTexture;
+        Vector2 rectPosition;
+        float rectSpeed;
+
+
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
@@ -19,6 +24,7 @@ namespace match3game
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
+            rectPosition = new Vector2(0, 0);
 
             base.Initialize();
         }
@@ -28,6 +34,7 @@ namespace match3game
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
             // TODO: use this.Content to load your game content here
+            rectTexture = Content.Load<Texture2D>("rect_black");
         }
 
         protected override void Update(GameTime gameTime)
@@ -37,6 +44,8 @@ namespace match3game
 
             // TODO: Add your update logic here
 
+
+
             base.Update(gameTime);
         }
 
@@ -45,6 +54,11 @@ namespace match3game
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             // TODO: Add your drawing code here
+            _spriteBatch.Begin();
+
+            _spriteBatch.Draw(rectTexture, rectPosition, Color.White);
+
+            _spriteBatch.End();
 
             base.Draw(gameTime);
         }

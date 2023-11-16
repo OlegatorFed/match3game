@@ -18,14 +18,11 @@ namespace match3game
             MState = Mouse.GetState();
         }
 
-        public Vector2 GetMousePos()
-        {
-            return new Vector2(Mouse.GetState().X, Mouse.GetState().Y);
-        }
+        public Vector2 GetMousePos() { return new Vector2(MState.X, MState.Y); }
 
         public void CheckMouseClick()
         {
-            if (Mouse.GetState().LeftButton == ButtonState.Pressed)
+            if (MState.LeftButton == ButtonState.Pressed)
             {
                 MouseClicked?.Invoke(GetMousePos());
             }
@@ -33,6 +30,7 @@ namespace match3game
 
         public void Update()
         {
+            MState = Mouse.GetState();
             CheckMouseClick();
         }
     }

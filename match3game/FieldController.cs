@@ -10,23 +10,25 @@ namespace match3game
     internal class FieldController
     {
 
+        public Vector2 Position { get; private set; }
         public int Width { get; private set; }
         public int Height { get; private set; }
         public Gem[,] GemGrid { get; private set; }
 
         Color[] colors;
 
-        public FieldController(int width, int height)
+        public FieldController(int width, int height, Vector2 position)
         {
 
             Width = width;
             Height = height;
+            Position = position;
 
             GemGrid = new Gem[width, height];
 
             GenerateColors();
             GenerateField();
-
+            Position = position;
         }
 
         private void GenerateColors()
@@ -62,6 +64,12 @@ namespace match3game
 
         }
 
+        public void SelectGem(Vector2 position)
+        {
+            GemGrid[((int)position.X  - (int)Position.X) / 55, ((int)position.Y - (int)Position.Y) / 55].CurrentState = Gem.State.Selected;
+            GemGrid[((int)position.X - (int)Position.X) / 55, ((int)position.Y - (int)Position.Y) / 55].TextureName = "rect_white_border";
+        }
+
         public void GenerateField()
         {
 
@@ -75,6 +83,15 @@ namespace match3game
             }
 
 
+        }
+
+        public void OnClick(Vector2 position)
+        {
+            if ((position.X > Position.X && position.X < Position.X + Width * 55) &&
+                (position.Y > Position.Y && position.Y < Position.Y + Height * 55))
+            {
+                SelectGem(position);
+            }
         }
 
     }

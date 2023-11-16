@@ -25,7 +25,7 @@
 /processorParam:TextureFormat=Color
 /build:rect_black.png
 
-#begin rect_white_board.png
+#begin rect_white_border.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -35,7 +35,7 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:rect_white_board.png
+/build:rect_white_border.png
 
 #begin rect_white.png
 /importer:TextureImporter

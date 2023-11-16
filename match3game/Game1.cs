@@ -1,15 +1,20 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System.Collections.Generic;
+using static match3game.Gem;
 
 namespace match3game
 {
     public class Game1 : Game
     {
         Texture2D rectTexture;
+        Dictionary<string, Texture2D> textures;
         Vector2 rectPosition;
+        //MouseState mouseState = Mouse.GetState();
         
         FieldController fieldController;
+        InputController inputController;
 
 
         private GraphicsDeviceManager _graphics;
@@ -29,8 +34,13 @@ namespace match3game
             // TODO: Add your initialization logic here
             rectPosition = new Vector2(_graphics.PreferredBackBufferWidth / 2 - (55 * 4),
                 _graphics.PreferredBackBufferHeight / 2 - (55 * 4));
+            textures = new Dictionary<string, Texture2D>();
+            //mouseState = Mouse.GetState();
 
-            fieldController = new FieldController(8, 8);
+            fieldController = new FieldController(8, 8, rectPosition);
+            inputController = new InputController();
+
+            inputController.MouseClicked += fieldController.OnClick;
 
             base.Initialize();
         }
@@ -40,7 +50,11 @@ namespace match3game
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
             // TODO: use this.Content to load your game content here
-            rectTexture = Content.Load<Texture2D>("rect_white");
+
+            
+            textures.Add("rect_white", Content.Load<Texture2D>("rect_white"));
+            textures.Add("rect_white_border", Content.Load<Texture2D>("rect_white_border"));
+
         }
 
         protected override void Update(GameTime gameTime)
@@ -49,7 +63,7 @@ namespace match3game
                 Exit();
 
             // TODO: Add your update logic here
-
+            inputController.Update();
 
 
             base.Update(gameTime);
@@ -62,19 +76,25 @@ namespace match3game
             // TODO: Add your drawing code here
             _spriteBatch.Begin();
 
-            for (int i = 0; i < fieldController.Width; i++)
-            {
-                for (int j = 0; j < fieldController.Height; j++)
-                {
-                    _spriteBatch.Draw(rectTexture, 
-                        rectPosition + new Vector2(i * 55, j * 55), 
-                        fieldController.GemGrid[i, j].Color);
-                }
-            }
+            GemDrawRoutine();
 
             _spriteBatch.End();
 
             base.Draw(gameTime);
         }
+
+        protected void GemDrawRoutine()
+        {
+            for (int i = 0; i < fieldController.Width; i++)
+            {
+                for (int j = 0; j < fieldController.Height; j++)
+                {
+                    _spriteBatch.Draw(textures[fieldController.GemGrid[i, j].TextureName],
+                        fieldController.Position + new Vector2(i * 55, j * 55),
+                        fieldController.GemGrid[i, j].Color);
+                }
+            }
+        }
+
     }
 }

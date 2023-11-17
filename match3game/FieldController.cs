@@ -14,6 +14,7 @@ namespace match3game
         public int Width { get; private set; }
         public int Height { get; private set; }
         public Gem[,] GemGrid { get; private set; }
+        public List<Vector2> SelectedPositions { get; private set; }
 
         Color[] colors;
 
@@ -25,6 +26,7 @@ namespace match3game
             Position = position;
 
             GemGrid = new Gem[width, height];
+            SelectedPositions = new List<Vector2>();
 
             GenerateColors();
             GenerateField();
@@ -35,17 +37,23 @@ namespace match3game
         {
             colors = new Color[5];
 
-            colors[0] = Color.Maroon;
+            colors[0] = Color.Red;
             colors[1] = Color.Blue;
-            colors[2] = Color.DarkGreen;
-            colors[3] = Color.Khaki;
-            colors[4] = Color.Violet;
+            colors[2] = Color.Green;
+            colors[3] = Color.Orange;
+            colors[4] = Color.Purple;
         }
 
         public void SwapGems(int[] firstGemPos, int[] secondGemPos)
         {
-            (GemGrid[firstGemPos[0], firstGemPos[1]], GemGrid[secondGemPos[0], secondGemPos[1]]) 
-                = (GemGrid[secondGemPos[0], secondGemPos[1]], GemGrid[firstGemPos[0], firstGemPos[1]]);
+            int x1 = firstGemPos[0];
+            int y1 = firstGemPos[1];
+            int x2 = secondGemPos[0];
+            int y2 = secondGemPos[1];
+
+            if (Math.Abs(x1 - x2) == 1 && y1 == y2 || x1 == x2 && Math.Abs(y1 - y2) == 1)
+            (GemGrid[x1, y1], GemGrid[x2, y2]) 
+                = (GemGrid[x2, y2], GemGrid[x1, y1]);
         }
 
         public void DestroyGem(int[] position)
@@ -66,8 +74,38 @@ namespace match3game
 
         public void SelectGem(Vector2 position)
         {
-            GemGrid[((int)position.X  - (int)Position.X) / 55, ((int)position.Y - (int)Position.Y) / 55].CurrentState = Gem.State.Selected;
-            GemGrid[((int)position.X - (int)Position.X) / 55, ((int)position.Y - (int)Position.Y) / 55].TextureName = "rect_white_border";
+            int[] selectedGemPos = new int[2] { ((int)position.X - (int)Position.X) / 55,
+                ((int)position.Y - (int)Position.Y) / 55 };
+            Gem selectedGem = GemGrid[selectedGemPos[0], selectedGemPos[1]];
+
+            //GemGrid[((int)position.X  - (int)Position.X) / 55, ((int)position.Y - (int)Position.Y) / 55].CurrentState = Gem.State.Selected;
+            //GemGrid[((int)position.X - (int)Position.X) / 55, ((int)position.Y - (int)Position.Y) / 55].TextureName = "rect_white_border";
+            if (SelectedPositions.Count < 2)
+            {
+                selectedGem.ChangeState();
+                SelectedPositions.Add(new Vector2(selectedGemPos[0], selectedGemPos[1]));
+            }
+            if (SelectedPositions.Count == 2)
+            {
+                int x1 = (int)SelectedPositions[0].X;
+                int y1 = (int)SelectedPositions[0].Y;
+                int x2 = (int)SelectedPositions[1].X;
+                int y2 = (int)SelectedPositions[1].Y;
+
+                GemGrid[x1, y1].ChangeState();
+                GemGrid[x2, y2].ChangeState();
+
+                SwapGems(new int[] { x1, y1 },
+                    new int[] { x2, y2 });
+
+                SelectedPositions.Clear();
+            }
+            //selectedGem.ChangeState();
+        }
+
+        public void UnselectGem()
+        {
+
         }
 
         public void GenerateField()

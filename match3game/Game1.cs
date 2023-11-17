@@ -16,6 +16,11 @@ namespace match3game
         FieldController fieldController;
         InputController inputController;
 
+        enum GameState
+        {
+            Selecting
+        }
+
 
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
@@ -71,7 +76,7 @@ namespace match3game
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(Color.White);
 
             // TODO: Add your drawing code here
             _spriteBatch.Begin();

@@ -60,9 +60,19 @@ namespace match3game
             int x2 = secondGemPos[0];
             int y2 = secondGemPos[1];
 
-            if (Math.Abs(x1 - x2) == 1 && y1 == y2 || x1 == x2 && Math.Abs(y1 - y2) == 1)
+            if (TrySwap(firstGemPos, secondGemPos))
             (GemGrid[x1, y1], GemGrid[x2, y2]) 
                 = (GemGrid[x2, y2], GemGrid[x1, y1]);
+        }
+
+        private bool TrySwap(int[] firstGemPos, int[] secondGemPos)
+        {
+            int x1 = firstGemPos[0];
+            int y1 = firstGemPos[1];
+            int x2 = secondGemPos[0];
+            int y2 = secondGemPos[1];
+
+            return (Math.Abs(x1 - x2) == 1 && y1 == y2 || x1 == x2 && Math.Abs(y1 - y2) == 1);
         }
 
         public void DestroyGem(int[] position)
@@ -81,6 +91,8 @@ namespace match3game
             foreach (int[] positionToDestroy in GemsToDestroy)
             {
                 DestroyGem(positionToDestroy);
+                
+                //CreateGem (positionToDestroy);
             }
         }
 
@@ -105,28 +117,32 @@ namespace match3game
                 GemGrid[x1, y1].ChangeState();
                 GemGrid[x2, y2].ChangeState();
 
-                SwapGems(new int[] { x1, y1 },
-                    new int[] { x2, y2 });
-
-                List<Vector2> firstGemMatch = FindMatch(x2, y2, GemGrid[x1, y1].Color);
-                List<Vector2> secondGemMatch = FindMatch(x1, y1, GemGrid[x2, y2].Color);
-
-                if (firstGemMatch.Count == 0 &&  secondGemMatch.Count == 0)
+                if (TrySwap(new int[] { x1, y1 },
+                    new int[] { x2, y2 }))
                 {
                     SwapGems(new int[] { x1, y1 },
                     new int[] { x2, y2 });
-                }
-                else
-                {
-                    SetBonusCandidate(new int[] { x1, y1 }, secondGemMatch.Count);
-                    SetBonusCandidate(new int[] { x2, y2 }, firstGemMatch.Count);
 
-                    foreach (Vector2 gemPostion in firstGemMatch)
-                        GemsToDestroy.Add(new int[] { (int)gemPostion.X, (int)gemPostion.Y });
-                    foreach (Vector2 gemPostion in secondGemMatch)
-                        GemsToDestroy.Add(new int[] { (int)gemPostion.X, (int)gemPostion.Y });
+                    List<Vector2> firstGemMatch = FindMatch(x2, y2, GemGrid[x2, y2].Color);
+                    List<Vector2> secondGemMatch = FindMatch(x1, y1, GemGrid[x1, y1].Color);
 
-                    DestroyMatches();
+                    if (firstGemMatch.Count == 0 && secondGemMatch.Count == 0)
+                    {
+                        SwapGems(new int[] { x1, y1 },
+                            new int[] { x2, y2 });
+                    }
+                    else
+                    {
+                        SetBonusCandidate(new int[] { x1, y1 }, secondGemMatch.Count);
+                        SetBonusCandidate(new int[] { x2, y2 }, firstGemMatch.Count);
+
+                        foreach (Vector2 gemPostion in firstGemMatch)
+                            GemsToDestroy.Add(new int[] { (int)gemPostion.X, (int)gemPostion.Y });
+                        foreach (Vector2 gemPostion in secondGemMatch)
+                            GemsToDestroy.Add(new int[] { (int)gemPostion.X, (int)gemPostion.Y });
+
+                        DestroyMatches();
+                    }
                 }
 
                 SelectedPositions.Clear();
@@ -166,24 +182,28 @@ namespace match3game
             int vScore = 0;
             int totalScore = 0;
             List<Vector2> gemsInMatch = new List<Vector2> { new Vector2(x, y) };
+            List<Vector2> gemsInHorizontalMatch = new List<Vector2>();
+            List<Vector2> gemsInVerticalMatch = new List<Vector2>();
 
-            gemsInMatch = gemsInMatch.
+            gemsInHorizontalMatch = gemsInHorizontalMatch.
                 Concat(FindHorizontalMatch(x + 1, y, 1, GemGrid[x, y].Color).
                 Concat(FindHorizontalMatch(x - 1, y, -1, GemGrid[x, y].Color)).
                 ToList<Vector2>()).ToList<Vector2>();
 
-            hScore += gemsInMatch.Count;
+            hScore += gemsInHorizontalMatch.Count;
+            if (hScore >= 2) gemsInMatch = gemsInMatch.Concat(gemsInHorizontalMatch).ToList();
 
-            gemsInMatch = gemsInMatch.
+            gemsInVerticalMatch = gemsInVerticalMatch.
                 Concat(FindVerticalMatch(x, y + 1, 1, GemGrid[x, y].Color).
                 Concat(FindVerticalMatch(x, y - 1, -1, GemGrid[x, y].Color)).
                 ToList<Vector2>()).ToList<Vector2>();
 
-            vScore += gemsInMatch.Count - hScore + 1;
+            vScore += gemsInVerticalMatch.Count;
+            if (vScore >= 2) gemsInMatch = gemsInMatch.Concat(gemsInVerticalMatch).ToList();
 
             totalScore = hScore + vScore;
 
-            if (totalScore < 3) return new List<Vector2>();
+            if (hScore < 2 && vScore < 2) return new List<Vector2>();
             else return gemsInMatch;
         }
 
@@ -208,12 +228,13 @@ namespace match3game
         {
             List<Vector2> gemsInMatch = new List<Vector2> { };
 
-            if (y >= 0 && y < Width)
+            if (y >= 0 && y < Height)
             {
                 if (GemGrid[x, y].Color == matchingColor)
                 {
                     gemsInMatch.Add(new Vector2(x, y));
-                    return gemsInMatch.Concat(FindVerticalMatch(x, y + offset, offset, matchingColor)).ToList<Vector2>();
+                    return gemsInMatch.
+                        Concat(FindVerticalMatch(x, y + offset, offset, matchingColor)).ToList<Vector2>();
                 }
             }
 

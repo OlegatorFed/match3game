@@ -94,9 +94,12 @@ namespace match3game
             {
                 for (int j = 0; j < fieldController.Height; j++)
                 {
-                    _spriteBatch.Draw(textures[fieldController.GemGrid[i, j].TextureName],
+                    if (fieldController.GemGrid[i, j] != null)
+                    {
+                        _spriteBatch.Draw(textures[fieldController.GemGrid[i, j].TextureName],
                         fieldController.Position + new Vector2(i * 55, j * 55),
                         fieldController.GemGrid[i, j].Color);
+                    }
                 }
             }
         }

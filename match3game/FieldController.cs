@@ -14,6 +14,7 @@ namespace match3game
         public int Width { get; private set; }
         public int Height { get; private set; }
         public Gem[,] GemGrid { get; private set; }
+        //Gem[,] TestGrid = { {new Gem(Color.Red), new Gem(Color.Red), new Gem(Color.Red), new Gem(Color.Red) } };
 
         private List<Vector2> SelectedPositions;
         private List<int[]> GemsToDestroy;
@@ -36,6 +37,8 @@ namespace match3game
             HorizontalLineCandidates = new List<int[]>();
             VerticalLineCandidates = new List<int[]>();
             BombCandidates = new List<int[]>();
+
+
 
             GenerateColors();
             GenerateField();
@@ -91,9 +94,16 @@ namespace match3game
             foreach (int[] positionToDestroy in GemsToDestroy)
             {
                 DestroyGem(positionToDestroy);
-                
-                //CreateGem (positionToDestroy);
             }
+            foreach (int[] freePosition in GemsToDestroy)
+                FallGemsAbove(freePosition);
+            GemsToDestroy.Clear();
+        }
+
+        private void FallGemsAbove(int[] position)
+        {
+            for (int y = position[1]; y > 0; y--)
+                SwapGems(new int[] { position[0], y }, new int[] { position[0], y - 1 });
         }
 
         public void SelectGem(Vector2 position)
@@ -141,6 +151,7 @@ namespace match3game
                         foreach (Vector2 gemPostion in secondGemMatch)
                             GemsToDestroy.Add(new int[] { (int)gemPostion.X, (int)gemPostion.Y });
 
+                        GemsToDestroy.Sort();
                         DestroyMatches();
                     }
                 }
@@ -156,15 +167,15 @@ namespace match3game
             else if (matchCount == 4) HorizontalLineCandidates.Add(candidate);
         }
 
-        public List<Vector2> GetAllMatches()
+        public void GetAllMatches()
         {
             List<Vector2> checkedGems = new List<Vector2>();
 
-            for (int i = 0; i < Width - 2; i++)
+            for (int i = 0; i < Width; i++)
             {
-                for (int j = 0; j < Height - 2; j++)
+                for (int j = 0; j < Height; j++)
                 {
-                    if (checkedGems.Contains(new Vector2(i, j)))
+                    if (!checkedGems.Contains(new Vector2(i, j)))
                     {
                         Color matchingColor = GemGrid[i, j].Color;
 
@@ -173,7 +184,8 @@ namespace match3game
                 }
             }
 
-            return checkedGems;
+            foreach (Vector2 gemPos in checkedGems)
+                GemsToDestroy.Add(new int[] {(int)gemPos.X, (int)gemPos.Y });
         }
 
         private List<Vector2> FindMatch(int x, int y, Color matchingColor)

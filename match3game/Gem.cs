@@ -12,17 +12,23 @@ namespace match3game
     internal class Gem
     {
         public Color Color { get; private set; }
+        public float Scale { get; private set; }
         public string TextureName { get; private set; }
         public Point Position { get; set; }
         public Point Destination { get; set; }
         public enum State
         {
+            Spawning,
             Unselected,
             Selected,
-            Moving
+            Moving,
+            Dying,
+            Destroyed
         }
 
+        public event Action Spawned;
         public event Action FinieshedMoving;
+        public event Action<Gem> Destroyed;
 
         public State CurrentState { get; private set; }
 
@@ -37,11 +43,25 @@ namespace match3game
         {
             Position = position;
             Color = color;
+            Scale = 0f;
             TextureName = "rect_white";
-            CurrentState = State.Unselected;
+            CurrentState = State.Spawning;
+
         }
 
-        public void MoveTo(Point destination)
+        public void SpawnUpdate()
+        {
+            Scale += 0.01f;
+
+            if (Scale >= 1f)
+            {
+                Spawned?.Invoke();
+                ChangeState(State.Unselected);
+                Scale = 1f;
+            }
+        }
+
+        public void MoveUpdate(Point destination)
         {
             int speed = 5;
             int hDirection = Math.Sign(destination.X - Position.X);
@@ -58,6 +78,18 @@ namespace match3game
                 FinieshedMoving?.Invoke();
             }
 
+        }
+
+        public void DestroyUpdate()
+        {
+            Scale -= 0.1f;
+
+            if (Scale <= 0.1f)
+            {
+                Destroyed?.Invoke(this);
+                ChangeState(State.Destroyed);
+                Scale = 0f;
+            }
         }
 
         public void SwtichSelectState()
@@ -79,15 +111,26 @@ namespace match3game
             CurrentState = state;
         }
 
+        public void InitiateDestroying()
+        {
+            ChangeState(State.Dying);
+        }
+
         public void Update()
         {
+            if (CurrentState == State.Spawning)
+                SpawnUpdate();
             if (CurrentState == State.Moving)
-                MoveTo(Destination);
+                MoveUpdate(Destination);
+            if (CurrentState == State.Dying)
+                DestroyUpdate();
         }
+
+        
 
         public virtual void Action() 
         { 
-            
+            InitiateDestroying();
         }
     }
 }

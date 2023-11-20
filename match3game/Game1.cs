@@ -11,7 +11,6 @@ namespace match3game
         Texture2D rectTexture;
         Dictionary<string, Texture2D> textures;
         Vector2 rectPosition;
-        //MouseState mouseState = Mouse.GetState();
         
         FieldController fieldController;
         InputController inputController;
@@ -40,12 +39,13 @@ namespace match3game
             rectPosition = new Vector2(_graphics.PreferredBackBufferWidth / 2 - (55 * 4),
                 _graphics.PreferredBackBufferHeight / 2 - (55 * 4));
             textures = new Dictionary<string, Texture2D>();
-            //mouseState = Mouse.GetState();
 
             fieldController = new FieldController(8, 8, rectPosition);
             inputController = new InputController();
 
             inputController.MouseClicked += fieldController.OnClick;
+
+            fieldController.GenerateCustomField();
 
             base.Initialize();
         }
@@ -97,9 +97,13 @@ namespace match3game
                 {
                     if (fieldController.GemGrid[i, j] != null)
                     {
-                        _spriteBatch.Draw(textures[fieldController.GemGrid[i, j].TextureName],
-                        new Vector2(fieldController.GemGrid[i, j].Position.X, fieldController.GemGrid[i, j].Position.Y),
-                        fieldController.GemGrid[i, j].Color);
+                        Gem gemToDraw = fieldController.GemGrid[i, j];
+                        _spriteBatch.Draw(textures[gemToDraw.TextureName],
+                        new Rectangle(gemToDraw.Position.X,
+                            gemToDraw.Position.Y,
+                            (int)(textures[gemToDraw.TextureName].Width * gemToDraw.Scale),
+                            (int)(textures[gemToDraw.TextureName].Height * gemToDraw.Scale)),
+                        gemToDraw.Color);
                     }
                 }
             }
@@ -114,7 +118,10 @@ namespace match3game
                     gemToUpdate.Update();
                 }
 
-                fieldController.CheckMovingGems();
+                if (fieldController.IsUpdateListEmpty())
+                {
+                    fieldController.ClearUpdateList();
+                }
             }
         }
 

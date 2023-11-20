@@ -15,6 +15,8 @@ namespace match3game
         public int Height { get; private set; }
         public Gem[,] GemGrid { get; private set; }
         public List<Gem> GemsToUpdate { get; private set; }
+        public List<Gem> GemsToSpawn { get; private set; }
+        public State CurrentState { get; private set; }
 
         private int gemSize = 55;
 
@@ -28,24 +30,26 @@ namespace match3game
 
         Color[] colors;
 
-        enum State
+        public event Action Swapped;
+
+        public enum State
         {
             Generate,
             Idle,
             Move,
-            Fall
+            Destroy
         }
 
         public FieldController(int width, int height, Vector2 position)
         {
-            CustomMap = new string[] { "01234144",
-                                       "02224333",
-                                       "11342231",
-                                       "33313213",
-                                       "43414233",
-                                       "13232424",
-                                       "22313111",
-                                       "31214421"}; 
+            CustomMap = new string[] { "30310101",
+                                       "12101010",
+                                       "01010101",
+                                       "10101010",
+                                       "01010101",
+                                       "10101010",
+                                       "01010101",
+                                       "10101010"}; 
 
             Width = width;
             Height = height;
@@ -62,9 +66,15 @@ namespace match3game
             VerticalLineCandidates = new List<int[]>();
             BombCandidates = new List<int[]>();
 
+            CurrentState = State.Generate;
+
             GenerateColors();
-            GenerateField();
+            //GenerateField();
             //GenerateCustomField();
+
+            ChangeState(State.Idle);
+            //DestroyAllMatches();
+            
         }
 
         private void GenerateColors()
@@ -89,7 +99,7 @@ namespace match3game
             {
                 /*if (GemGrid[x1, y1] != null)
                     GemGrid[x1, y1].MoveTo(new Point((int)Position.X + x2 * gemSize, (int)Position.Y + y2 * gemSize));*/
-
+                //ChangeState(State.Move);
 
                 (GemGrid[x1, y1], GemGrid[x2, y2])
                     = (GemGrid[x2, y2], GemGrid[x1, y1]);
@@ -123,7 +133,15 @@ namespace match3game
 
         public void DestroyGem(Vector2 destroyPosition)
         {
+            /*GemsToUpdate.Add(GemGrid[(int)destroyPosition.X, (int)destroyPosition.Y]); 
+
+            GemGrid[(int)destroyPosition.X, (int)destroyPosition.Y].InitiateDestroying();*/
             GemGrid[(int)destroyPosition.X, (int)destroyPosition.Y] = null;
+        }
+
+        public void DeleteGem(Gem gem)
+        {
+            gem = null;
         }
 
         public void CreateGem(int[] position)
@@ -132,7 +150,9 @@ namespace match3game
             GemGrid[position[0], position[1]] = 
                 new Gem(new Point((int)Position.X + position[0] * gemSize, (int)Position.Y + position[1] * gemSize), colors[random.Next(colors.Length)]);
 
-            //GemGrid[position[0], position[1]].FinieshedMoving += CheckMovingGems;
+            GemsToUpdate.Add(GemGrid[position[0], position[1]]);
+
+            GemGrid[position[0], position[1]].Destroyed += DeleteGem;
         }
 
         public void CreateGem(int[] position, int colorNumber)
@@ -141,24 +161,66 @@ namespace match3game
             GemGrid[position[0], position[1]] = 
                 new Gem(new Point((int)Position.X + position[0] * gemSize, (int)Position.Y + position[1] * gemSize), colors[colorNumber]);
 
-            //GemGrid[position[0], position[1]].FinieshedMoving += CheckMovingGems;
+            GemsToUpdate.Add(GemGrid[position[0], position[1]]);
+
+            GemGrid[position[0], position[1]].Destroyed += DeleteGem;
         }
 
-        public void CheckMovingGems()
+        public void ClearUpdateList()
         {
-            if (GemsToUpdate.All(gem => gem.CurrentState != Gem.State.Moving))
-                GemsToUpdate.Clear();
+            GemsToUpdate.Clear();
+            //UpdateCleared?.Invoke();
+        }
+
+        public bool IsUpdateListEmpty()
+        {
+            return !HasMovingGems() && !HasDyingGems() && !HasSpawningGems();
+        }
+
+        public bool HasMovingGems()
+        {
+            return GemsToUpdate.Any(gem => gem.CurrentState == Gem.State.Moving);
+        }
+
+        public bool HasSpawningGems()
+        {
+            return GemsToUpdate.Any(gem => gem.CurrentState == Gem.State.Spawning);
+        }
+
+        public bool HasDyingGems()
+        {
+            return GemsToUpdate.Any(gem => gem.CurrentState == Gem.State.Dying);
         }
 
         public void DestroyMatches()
         {
+            //ChangeState(State.Destroy);
+
             foreach (Vector2 positionToDestroy in GemsToDestroy)
             {
                 DestroyGem(positionToDestroy);
             }
-            foreach (Vector2 freePosition in GemsToDestroy)
-                FallGemsAbove(freePosition);
+
+            //foreach (Vector2 freePosition in GemsToDestroy)
+            //    FallGemsAbove(freePosition);
+            FallAllGems();
+
             GemsToDestroy.Clear();
+            //FillEmptySlots();
+        }
+
+        private void FallAllGems()
+        {
+            for (int x = 0; x < Width;  x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    if (GemGrid[x, y] == null)
+                    {
+                        FallGemsAbove(new Vector2(x, y));
+                    }
+                }
+            }
         }
 
         private void FallGemsAbove(Vector2 fallPosition)
@@ -169,56 +231,68 @@ namespace match3game
 
         public void SelectGem(Vector2 position)
         {
-            int[] selectedGemPos = new int[2] { ((int)position.X - (int)Position.X) / gemSize,
+            if (CurrentState == State.Idle)
+            {
+                int[] selectedGemPos = new int[2] { ((int)position.X - (int)Position.X) / gemSize,
                 ((int)position.Y - (int)Position.Y) / gemSize };
-            Gem selectedGem = GemGrid[selectedGemPos[0], selectedGemPos[1]];
+                Gem selectedGem = GemGrid[selectedGemPos[0], selectedGemPos[1]];
 
-            if (SelectedPositions.Count < 2)
-            {
-                selectedGem.SwtichSelectState();
-                SelectedPositions.Add(new Vector2(selectedGemPos[0], selectedGemPos[1]));
-            }
-            if (SelectedPositions.Count == 2)
-            {
-                int x1 = (int)SelectedPositions[0].X;
-                int y1 = (int)SelectedPositions[0].Y;
-                int x2 = (int)SelectedPositions[1].X;
-                int y2 = (int)SelectedPositions[1].Y;
-
-                GemGrid[x1, y1].SwtichSelectState();
-                GemGrid[x2, y2].SwtichSelectState();
-
-                if (TrySwap(new int[] { x1, y1 },
-                    new int[] { x2, y2 }))
+                if (SelectedPositions.Count < 2)
                 {
-                    SwapGems(new int[] { x1, y1 },
-                    new int[] { x2, y2 });
-
-                    List<Vector2> firstGemMatch = FindMatch(x2, y2, GemGrid[x2, y2].Color);
-                    List<Vector2> secondGemMatch = FindMatch(x1, y1, GemGrid[x1, y1].Color);
-
-                    if (firstGemMatch.Count == 0 && secondGemMatch.Count == 0)
-                    {
-                        SwapGems(new int[] { x1, y1 },
-                            new int[] { x2, y2 });
-                    }
-                    else
-                    {
-                        SetBonusCandidate(new int[] { x1, y1 }, secondGemMatch.Count);
-                        SetBonusCandidate(new int[] { x2, y2 }, firstGemMatch.Count);
-
-                        foreach (Vector2 gemPostion in firstGemMatch)
-                            GemsToDestroy.Add(gemPostion);
-                        foreach (Vector2 gemPostion in secondGemMatch)
-                            GemsToDestroy.Add(gemPostion);
-
-                        DestroyMatches();
-                    }
+                    selectedGem.SwtichSelectState();
+                    SelectedPositions.Add(new Vector2(selectedGemPos[0], selectedGemPos[1]));
                 }
+                if (SelectedPositions.Count == 2)
+                {
+                    int x1 = (int)SelectedPositions[0].X;
+                    int y1 = (int)SelectedPositions[0].Y;
+                    int x2 = (int)SelectedPositions[1].X;
+                    int y2 = (int)SelectedPositions[1].Y;
 
-                SelectedPositions.Clear();
+                    if (TrySwap(new int[] { x1, y1 },
+                            new int[] { x2, y2 }))
+                    {
+                        GemGrid[x1, y1].SwtichSelectState();
+                        GemGrid[x2, y2].SwtichSelectState();
+
+                        SwapGems(new int[] { x1, y1 },
+                        new int[] { x2, y2 });
+
+                        FindSwapMatches(x1, y1, x2, y2);
+                    }
+
+                    SelectedPositions.Clear();
+                }
             }
-            //selectedGem.ChangeState();
+        }
+
+        private void FindSwapMatches(int x1, int y1, int x2, int y2)
+        {
+            List<Vector2> firstGemMatch = FindMatch(x2, y2, GemGrid[x2, y2].Color);
+            List<Vector2> secondGemMatch = FindMatch(x1, y1, GemGrid[x1, y1].Color);
+
+            if (firstGemMatch.Count == 0 && secondGemMatch.Count == 0)
+            {
+                SwapGems(new int[] { x1, y1 },
+                    new int[] { x2, y2 });
+            }
+            else
+            {
+                SetBonusCandidate(new int[] { x1, y1 }, secondGemMatch.Count);
+                SetBonusCandidate(new int[] { x2, y2 }, firstGemMatch.Count);
+                
+                foreach (Vector2 gemPostion in firstGemMatch)
+                    GemsToDestroy.Add(gemPostion);
+                foreach (Vector2 gemPostion in secondGemMatch)
+                    GemsToDestroy.Add(gemPostion);
+                
+                DestroyMatches();
+            }
+        }
+
+        private void SetGemsToDesroy()
+        {
+
         }
 
         private void SetBonusCandidate(int[] candidate, int matchCount)
@@ -246,6 +320,8 @@ namespace match3game
 
             foreach (Vector2 gemPos in checkedGems)
                 GemsToDestroy.Add(gemPos);
+
+            
         }
 
         private List<Vector2> FindMatch(int x, int y, Color matchingColor)
@@ -316,38 +392,98 @@ namespace match3game
             return gemsInMatch;
         }
 
+        public void FillEmptySlots()
+        {
+            bool filled = false;
+
+            //ChangeState(State.Generate);
+
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    if (GemGrid[x, y] == null)
+                    {
+                        CreateGem(new int[] { x, y });
+                        filled = true;
+                    }
+                }
+            }
+
+            if (filled)
+            {
+                DestroyAllMatches();
+            }
+            else
+            {
+                //ChangeState(State.Idle);
+            }
+            
+        }
+
         public void GenerateField()
         {
+            //ChangeState(State.Generate);
 
-            for (int i = 0; i < Width; i++)
+            for (int x = 0; x < Width; x++)
             {
-                for (int j = 0; j < Height; j++)
+                for (int y = 0; y < Height; y++)
                 {
-                    CreateGem(new int[] { i, j });
+                    CreateGem(new int[] { x, y });
 
                 }
             }
 
-            GetAllMatches();
-            DestroyMatches();
+            //GetAllMatches();
+            //DestroyMatches();
         }
 
         public void GenerateCustomField()
         {
+            //ChangeState(State.Generate);
+
             for (int x = 0; x < Width; x++)
                 for (int y = 0; y < Height; y++)
                 {
                     CreateGem(new int[] { x, y },  CustomMap[y][x] - '0');
                 }
 
+            //GetAllMatches();
+            //DestroyMatches();
+
+            //DestroyAllMatches();
+        }
+
+        public void DecideAction()
+        {
+            if (CurrentState == State.Move)
+            {
+                
+            }
+        }
+
+        public void ChangeState(State state)
+        {
+            CurrentState = state;
+        }
+
+        public void DestroyAllMatches()
+        {
             GetAllMatches();
-            DestroyMatches();
+
+            if (GemsToDestroy.Count > 0)
+            {
+                //ChangeState(State.Destroy);
+                DestroyMatches();
+            }
+            
+            FillEmptySlots();
         }
 
         public void OnClick(Vector2 position)
         {
             if ((position.X > Position.X && position.X < Position.X + Width * 55) &&
-                (position.Y > Position.Y && position.Y < Position.Y + Height * 55))
+                (position.Y > Position.Y && position.Y < Position.Y + Height * 55) && CurrentState == State.Idle)
             {
                 SelectGem(position);
             }
@@ -355,7 +491,7 @@ namespace match3game
 
         public void Update()
         {
-
+            
         }
 
     }

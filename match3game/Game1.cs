@@ -69,6 +69,7 @@ namespace match3game
 
             // TODO: Add your update logic here
             inputController.Update();
+            GemUpdateRoutine();
 
 
             base.Update(gameTime);
@@ -97,10 +98,23 @@ namespace match3game
                     if (fieldController.GemGrid[i, j] != null)
                     {
                         _spriteBatch.Draw(textures[fieldController.GemGrid[i, j].TextureName],
-                        fieldController.Position + new Vector2(i * 55, j * 55),
+                        new Vector2(fieldController.GemGrid[i, j].Position.X, fieldController.GemGrid[i, j].Position.Y),
                         fieldController.GemGrid[i, j].Color);
                     }
                 }
+            }
+        }
+
+        protected void GemUpdateRoutine()
+        {
+            if (fieldController.GemsToUpdate.Count > 0)
+            {
+                foreach (Gem gemToUpdate in fieldController.GemsToUpdate)
+                {
+                    gemToUpdate.Update();
+                }
+
+                fieldController.CheckMovingGems();
             }
         }
 

@@ -18,12 +18,16 @@ namespace match3game
         public Point Destination { get; set; }
         public enum State
         {
+            Idle,
             Spawning,
-            Unselected,
-            Selected,
             Moving,
             Dying,
             Destroyed
+        }
+        enum SelectState
+        {
+            Selected,
+            Unselected
         }
 
         public event Action Spawned;
@@ -31,32 +35,35 @@ namespace match3game
         public event Action<Gem> Destroyed;
 
         public State CurrentState { get; private set; }
+        private SelectState CurrentSelectState;
 
         public Gem(Color color)
         {
             Color = color;
             TextureName = "rect_white";
-            CurrentState = State.Unselected;
+            ChangeState(State.Idle);
         }
 
         public Gem(Point position, Color color)
         {
             Position = position;
+            Destination = Position;
             Color = color;
             Scale = 0f;
             TextureName = "rect_white";
+            CurrentSelectState = SelectState.Unselected;
             CurrentState = State.Spawning;
 
         }
 
         public void SpawnUpdate()
         {
-            Scale += 0.01f;
+            Scale += 0.1f;
 
             if (Scale >= 1f)
             {
                 Spawned?.Invoke();
-                ChangeState(State.Unselected);
+                ChangeState(State.Idle);
                 Scale = 1f;
             }
         }
@@ -74,7 +81,7 @@ namespace match3game
             if (hDistance <= 5 && vDistance <= 5)
             {
                 Position = destination;
-                CurrentState = State.Unselected;
+                ChangeState(State.Idle);
                 FinieshedMoving?.Invoke();
             }
 
@@ -94,14 +101,14 @@ namespace match3game
 
         public void SwtichSelectState()
         {
-            if (CurrentState == State.Selected)
+            if (CurrentSelectState == SelectState.Selected)
             {
-                ChangeState(State.Unselected);
+                CurrentSelectState = SelectState.Unselected;
                 TextureName = "rect_white";
             }
-            else
+            else if (CurrentSelectState == SelectState.Unselected)
             {
-                ChangeState(State.Selected);
+                CurrentSelectState = SelectState.Selected;
                 TextureName = "rect_white_border";
             }
         }

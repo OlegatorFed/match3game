@@ -14,6 +14,7 @@ namespace match3game
         
         FieldController fieldController;
         InputController inputController;
+        AnimationController animationController;
 
         enum GameState
         {
@@ -40,8 +41,12 @@ namespace match3game
                 _graphics.PreferredBackBufferHeight / 2 - (55 * 4));
             textures = new Dictionary<string, Texture2D>();
 
-            fieldController = new FieldController(8, 8, rectPosition);
+
+            animationController = new AnimationController();
+            fieldController = new FieldController(8, 8, rectPosition, animationController);
             inputController = new InputController();
+            
+            animationController.SubscribeToFieldController(fieldController);
 
             inputController.MouseClicked += fieldController.OnClick;
 
@@ -111,16 +116,19 @@ namespace match3game
 
         protected void GemUpdateRoutine()
         {
-            if (fieldController.GemsToUpdate.Count > 0)
+            if (animationController.GemsToUpdate.Count > 0)
             {
-                foreach (Gem gemToUpdate in fieldController.GemsToUpdate)
+                foreach (Gem gemToUpdate in animationController.GemsToUpdate)
                 {
                     gemToUpdate.Update();
                 }
 
-                if (fieldController.IsUpdateListEmpty())
+                if (!animationController.HasDyingGems() &&
+                    !animationController.HasMovingGems() &&
+                    !animationController.HasSpawningGems() ||
+                    animationController.HasDestroyedGems())
                 {
-                    fieldController.ClearUpdateList();
+                    animationController.ClearUpdatingGems();
                 }
             }
         }

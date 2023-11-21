@@ -75,7 +75,7 @@ namespace match3game
         {
             ChangeState(State.Destroy);
             GemsToUpdate.Add(dyingGem);
-            dyingGem.ChangeState(Gem.State.Dying);
+            dyingGem.Action();
         }
 
         public void SetMovingGems(Gem movingGems)

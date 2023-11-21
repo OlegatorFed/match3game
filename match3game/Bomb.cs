@@ -7,15 +7,13 @@ using System.Threading.Tasks;
 
 namespace match3game
 {
-    internal class VerticalLine : Gem
+    internal class Bomb : Gem
     {
-        public VerticalLine(Color color) : base(color) { }
-
-        public VerticalLine(Point position, Color color) : base(position, color)
+        public Bomb(Point position, Color color) : base(position, color)
         {
             Scale = 1f;
-            UnselectedTextureName = "rect_white_v";
-            SelectedTextureName = "rect_white_v_border";
+            UnselectedTextureName = "rect_white_star";
+            SelectedTextureName = "rect_white_star_border";
             TextureName = UnselectedTextureName;
             CurrentState = State.Idle;
         }
@@ -24,5 +22,6 @@ namespace match3game
         {
             base.Action();
         }
+
     }
 }

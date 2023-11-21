@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
+using System.IO;
 using static match3game.Gem;
 
 namespace match3game
@@ -10,11 +11,13 @@ namespace match3game
     {
         Texture2D rectTexture;
         Dictionary<string, Texture2D> textures;
+        SpriteFont font;
         Vector2 rectPosition;
         
         FieldController fieldController;
         InputController inputController;
         AnimationController animationController;
+        ScoreController scoreController;
 
         enum GameState
         {
@@ -45,12 +48,13 @@ namespace match3game
             animationController = new AnimationController();
             fieldController = new FieldController(8, 8, rectPosition, animationController);
             inputController = new InputController();
+            scoreController = new ScoreController(fieldController);
             
             animationController.SubscribeToFieldController(fieldController);
 
             inputController.MouseClicked += fieldController.OnClick;
 
-            fieldController.GenerateCustomField();
+            fieldController.GenerateField();
 
             base.Initialize();
         }
@@ -59,11 +63,19 @@ namespace match3game
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // TODO: use this.Content to load your game content here
+            DirectoryInfo contentDir = new DirectoryInfo(Content.RootDirectory + "/Textures");
+            FileInfo[] files = contentDir.GetFiles("*.xnb");
 
-            
-            textures.Add("rect_white", Content.Load<Texture2D>("rect_white"));
-            textures.Add("rect_white_border", Content.Load<Texture2D>("rect_white_border"));
+            font = Content.Load<SpriteFont>("font");
+
+            foreach (FileInfo texture in files)
+            {
+                string fileName = Path.GetFileNameWithoutExtension(texture.Name);
+                textures.Add(fileName, Content.Load<Texture2D>(fileName));
+            }
+
+            //textures.Add("rect_white", Content.Load<Texture2D>("rect_white"));
+            //textures.Add("rect_white_border", Content.Load<Texture2D>("rect_white_border"));
 
         }
 
@@ -88,6 +100,8 @@ namespace match3game
             _spriteBatch.Begin();
 
             GemDrawRoutine();
+
+            _spriteBatch.DrawString(font, scoreController.Score.ToString(), rectPosition - new Vector2(100, 100), Color.Black);
 
             _spriteBatch.End();
 

@@ -12,8 +12,10 @@ namespace match3game
     internal class Gem
     {
         public Color Color { get; private set; }
-        public float Scale { get; private set; }
-        public string TextureName { get; private set; }
+        public float Scale { get; protected set; }
+        public string TextureName { get; protected set; }
+        protected string UnselectedTextureName;
+        protected string SelectedTextureName;
         public Point Position { get; set; }
         public Point Destination { get; set; }
         public enum State
@@ -34,7 +36,7 @@ namespace match3game
         public event Action FinieshedMoving;
         public event Action<Gem> Destroyed;
 
-        public State CurrentState { get; private set; }
+        public State CurrentState { get; protected set; }
         private SelectState CurrentSelectState;
 
         public Gem(Color color)
@@ -50,7 +52,9 @@ namespace match3game
             Destination = Position;
             Color = color;
             Scale = 0f;
-            TextureName = "rect_white";
+            UnselectedTextureName = "rect_white";
+            SelectedTextureName = "rect_white_border";
+            TextureName = UnselectedTextureName;
             CurrentSelectState = SelectState.Unselected;
             CurrentState = State.Spawning;
 
@@ -104,12 +108,12 @@ namespace match3game
             if (CurrentSelectState == SelectState.Selected)
             {
                 CurrentSelectState = SelectState.Unselected;
-                TextureName = "rect_white";
+                TextureName = UnselectedTextureName;
             }
             else if (CurrentSelectState == SelectState.Unselected)
             {
                 CurrentSelectState = SelectState.Selected;
-                TextureName = "rect_white_border";
+                TextureName = SelectedTextureName;
             }
         }
 

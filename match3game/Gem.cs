@@ -34,7 +34,7 @@ namespace match3game
 
         public event Action Spawned;
         public event Action FinieshedMoving;
-        public event Action<Gem> Destroyed;
+        public event Action<Point> Destroyed;
 
         public State CurrentState { get; protected set; }
         private SelectState CurrentSelectState;
@@ -97,7 +97,7 @@ namespace match3game
 
             if (Scale <= 0.1f)
             {
-                Destroyed?.Invoke(this);
+                Destroyed?.Invoke(Position);
                 ChangeState(State.Destroyed);
                 Scale = 0f;
             }

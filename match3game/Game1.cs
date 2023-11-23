@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using static match3game.Gem;
 
 namespace match3game
@@ -14,6 +15,8 @@ namespace match3game
         SpriteFont font;
         Vector2 rectPosition;
         
+        GameController gameController;
+
         FieldController fieldController;
         InputController inputController;
         AnimationController animationController;
@@ -39,11 +42,11 @@ namespace match3game
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
             rectPosition = new Vector2(_graphics.PreferredBackBufferWidth / 2 - (55 * 4),
                 _graphics.PreferredBackBufferHeight / 2 - (55 * 4));
             textures = new Dictionary<string, Texture2D>();
 
+            //GameController gameController = new GameController();
 
             animationController = new AnimationController();
             fieldController = new FieldController(8, 8, rectPosition, animationController);
@@ -73,9 +76,7 @@ namespace match3game
                 string fileName = Path.GetFileNameWithoutExtension(texture.Name);
                 textures.Add(fileName, Content.Load<Texture2D>(fileName));
             }
-
-            //textures.Add("rect_white", Content.Load<Texture2D>("rect_white"));
-            //textures.Add("rect_white_border", Content.Load<Texture2D>("rect_white_border"));
+;
 
         }
 
@@ -84,9 +85,9 @@ namespace match3game
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // TODO: Add your update logic here
             inputController.Update();
             GemUpdateRoutine();
+            BonusUpdate();
 
 
             base.Update(gameTime);
@@ -96,10 +97,10 @@ namespace match3game
         {
             GraphicsDevice.Clear(Color.White);
 
-            // TODO: Add your drawing code here
             _spriteBatch.Begin();
 
             GemDrawRoutine();
+            BonusDraw();
 
             _spriteBatch.DrawString(font, scoreController.Score.ToString(), rectPosition - new Vector2(100, 100), Color.Black);
 
@@ -126,6 +127,33 @@ namespace match3game
                     }
                 }
             }
+        }
+
+        protected void BonusDraw()
+        {
+            foreach (HorizontalDestroyer destroyer in fieldController.ActiveHorizontalDestroyers)
+            {
+                _spriteBatch.Draw(textures[destroyer.TextureName],
+                    new Vector2(destroyer.Position.X, destroyer.Position.Y),
+                    Color.White);
+            }
+        }
+
+        protected void BonusUpdate()
+        {
+            if (fieldController.ActiveHorizontalDestroyers.Count > 0)
+            {
+                foreach (HorizontalDestroyer destroyer in fieldController.ActiveHorizontalDestroyers)
+                {
+                    destroyer.Update();
+                }
+
+                if (fieldController.ActiveHorizontalDestroyers.All( (HorizontalDestroyer item) => item.CurrentState == HorizontalDestroyer.State.Stoped) )
+                {
+                    fieldController.ActiveHorizontalDestroyers.Clear();
+                }
+            }
+            
         }
 
         protected void GemUpdateRoutine()

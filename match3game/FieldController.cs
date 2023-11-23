@@ -9,6 +9,7 @@ namespace match3game
 {
     internal class FieldController
     {
+        public bool Active;
         private string[] CustomMap;
         public Vector2 Position { get; private set; }
         public int Width { get; private set; }
@@ -20,6 +21,8 @@ namespace match3game
         public State CurrentState { get; private set; }
 
         private int gemSize = 55;
+        public List<HorizontalDestroyer> ActiveHorizontalDestroyers;
+        
 
         private List<Vector2> SelectedPositions;
 
@@ -54,7 +57,9 @@ namespace match3game
                                        "01010101",
                                        "10101010",
                                        "01010101",
-                                       "10101010"}; 
+                                       "10101010"};
+
+            Active = false;
 
             Width = width;
             Height = height;
@@ -66,6 +71,7 @@ namespace match3game
             animationController.Finished += OnFinished;
 
             GemGrid = new Gem[width, height];
+            ActiveHorizontalDestroyers = new List<HorizontalDestroyer>();
 
             SelectedPositions = new List<Vector2>();
 
@@ -97,6 +103,11 @@ namespace match3game
             colors[2] = Color.Green;
             colors[3] = Color.Orange;
             colors[4] = Color.Purple;
+        }
+
+        private Vector2 PositionToIndex(Point pos)
+        {
+            return new Vector2((pos.X - (int)Position.X) / gemSize, (pos.Y - (int)Position.Y) / gemSize);
         }
 
         public void SwapGems(int[] firstGemPos, int[] secondGemPos)
@@ -142,6 +153,7 @@ namespace match3game
             if (bonusType == 0)
             {
                 GemGrid[x, y] = new HorizontalLine(new Point((int)Position.X + x * gemSize, (int)Position.Y + y * gemSize), color);
+                GemGrid[x, y].Destroyed += CreateHorizontalDestroyers;
             }
             if (bonusType == 1)
             {
@@ -149,12 +161,19 @@ namespace match3game
             }
             if (bonusType == 2)
             {
-                GemGrid[x, y] = new HorizontalLine(new Point((int)Position.X + x * gemSize, (int)Position.Y + y * gemSize), color);
+                GemGrid[x, y] = new Bomb(new Point((int)Position.X + x * gemSize, (int)Position.Y + y * gemSize), color);
             }
         }
 
         public void DestroyGem(Vector2 destroyPosition)
         {
+            Destroying?.Invoke(GemGrid[(int)destroyPosition.X, (int)destroyPosition.Y]);
+            Score?.Invoke(10);
+        }
+
+        public void DestroyGem(Point destroyPoint)
+        {
+            Vector2 destroyPosition = PositionToIndex(destroyPoint);
             Destroying?.Invoke(GemGrid[(int)destroyPosition.X, (int)destroyPosition.Y]);
             Score?.Invoke(10);
         }
@@ -177,13 +196,17 @@ namespace match3game
                 {
                     PlaceBonus(x, y, color, 1);
                 }
-                else if (BombCandidates.Contains(gemsToDelete)) 
+                else if (BombCandidates.Contains(gemsToDelete))
                 {
                     PlaceBonus(x, y, color, 2);
                 }*/
-
             }
+
+            //ClearCandidates();
             GemsToDestroy.Clear();
+            HorizontalLineCandidates.Clear();
+            VerticalLineCandidates.Clear();
+            BombCandidates.Clear();
         }
 
         public void CreateGem(int[] position)
@@ -206,12 +229,50 @@ namespace match3game
             Spawning?.Invoke(GemGrid[position[0], position[1]]);
         }
 
-        public void CreateGem(int[] position, Color color, int bonusType)
+        public void CreateHorizontalDestroyers(Point gemPosition)
         {
-            GemGrid[position[0], position[1]] =
-                new Gem(new Point((int)Position.X + position[0] * gemSize, (int)Position.Y + position[1] * gemSize), color);
+            List<Point> rightGems = new List<Point>();
+            List<Point> leftGems = new List<Point>();
 
-            Spawning?.Invoke(GemGrid[position[0], position[1]]);
+            int y = (gemPosition.Y - (int)Position.Y) / gemSize;
+
+            for (int x = (gemPosition.X - (int) Position.X) / gemSize + 1; x < Width; x++)
+            {
+                if (GemGrid[x, y] != null)
+                    rightGems.Add(new Point(GemGrid[x, y].Position.X, GemGrid[x, y].Position.Y));
+            }
+            for (int x = (gemPosition.X - (int)Position.X) / gemSize - 1; x >= 0; x--)
+            {
+                if (GemGrid[x, y] != null)
+                    leftGems.Add(new Point(GemGrid[x, y].Position.X, GemGrid[x, y].Position.Y));
+            }
+
+            HorizontalDestroyer rightDestroyer = new HorizontalDestroyer
+                (gemPosition, new Point((int)Position.X + Width * gemSize + gemSize, gemPosition.Y), rightGems);
+            HorizontalDestroyer leftDestroyer = new HorizontalDestroyer
+                (gemPosition, new Point((int)Position.X - gemSize, gemPosition.Y), leftGems);
+
+            ActiveHorizontalDestroyers.Add(rightDestroyer);
+            ActiveHorizontalDestroyers.Add(leftDestroyer);
+
+            rightDestroyer.PassedBy += DestroyGem;
+            leftDestroyer.PassedBy += DestroyGem;
+
+            /*rightDestroyer.Finished += (HorizontalDestroyer destroyer) =>
+            {
+                ActiveHorizontalDestroyers.Remove(destroyer);
+                destroyer = null;
+            };
+            leftDestroyer.Finished += (HorizontalDestroyer destroyer) =>
+            {
+                ActiveHorizontalDestroyers.Remove(destroyer);
+                destroyer = null;
+            };*/
+        }
+
+        public void CreateVerticalDestroyers()
+        {
+
         }
 
         public bool HasSwappedGems()
@@ -229,6 +290,7 @@ namespace match3game
         {
             foreach (Vector2 positionToDestroy in GemsToDestroy)
             {
+
                 DestroyGem(positionToDestroy);
             }
 
@@ -422,7 +484,7 @@ namespace match3game
 
             totalScore = hScore + vScore;
 
-            if (hScore == 3)
+            /*if (hScore == 3)
             {
                 SetHorizontalLineCandidate(new int[] { x, y });
             }
@@ -433,7 +495,7 @@ namespace match3game
             else if (totalScore >= 4)
             {
                 SetBombCandidate(new int[] { x, y });
-            }
+            }*/
 
             if (hScore < 2 && vScore < 2) return new List<Vector2>();
             else return gemsInMatch;
@@ -535,7 +597,8 @@ namespace match3game
         public void OnClick(Vector2 position)
         {
             if ((position.X > Position.X && position.X < Position.X + Width * 55) &&
-                (position.Y > Position.Y && position.Y < Position.Y + Height * 55) && CurrentState == State.Idle)
+                (position.Y > Position.Y && position.Y < Position.Y + Height * 55) && 
+                CurrentState == State.Idle)
             {
                 SelectGem(position);
             }
@@ -575,11 +638,12 @@ namespace match3game
             {
                 DestroyMatches();
             } 
-            else if (HasEmptySlots() && !Collapsed)
+            else if (HasEmptySlots() && !Collapsed && ActiveHorizontalDestroyers.Count == 0)
             {
                 
                 CollapseAllGems();
-            } else if (Collapsed)
+            } 
+            else if (Collapsed)
             {
                 FillEmptySlots();
                 Collapsed = false;
